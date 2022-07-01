@@ -1,15 +1,16 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
+import 'package:camera/camera.dart';
 import 'package:food_for_me/data_services/propaganda_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
+late List<CameraDescription> _cameras;
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-
-
-import 'package:flutter/material.dart';
-
-void main() {
+  _cameras = await availableCameras();
   runApp(
     MaterialApp(
       title: 'Food-For-Me',
@@ -788,7 +789,10 @@ class MyCustomScrollBehavior extends MaterialScrollBehavior {
           ),
         floatingActionButton: _showFab
           ? FloatingActionButton(
-            onPressed: () {},
+          onPressed: () {
+            Navigator.push( context,
+                MaterialPageRoute(builder: (context) => const CameraApp()));
+            },
             tooltip: 'Camara',
             backgroundColor: Colors.orange[900],
             child: const Icon(Icons.photo_camera, color: Colors.black),
@@ -1294,6 +1298,159 @@ class AppBarContent extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+
+/// CameraApp is the Main Application.
+class CameraApp extends StatefulWidget {
+  /// Default Constructor
+  const CameraApp({Key? key}) : super(key: key);
+
+  @override
+  State<CameraApp> createState() => _CameraAppState();
+}
+
+class _CameraAppState extends State<CameraApp> {
+  late CameraController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = CameraController(_cameras[0], ResolutionPreset.max);
+    controller.initialize().then((_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {});
+    }).catchError((Object e) {
+      if (e is CameraException) {
+        switch (e.code) {
+          case 'CameraAccessDenied':
+            print('User denied camera access.');
+            break;
+          default:
+            print('Handle other errors.');
+            break;
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+  int flag=1;
+  @override
+  Widget build(BuildContext context) {
+    if (!controller.value.isInitialized) {
+      return Container();
+    }
+    return Scaffold(
+      body: CameraPreview(controller),
+        floatingActionButton: FloatingActionButton(
+          // Provide an onPressed callback.
+          onPressed: () {
+            if(flag==1){
+              flag=2;
+              Timer(Duration(seconds: 3), () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(dialogBackgroundColor: Colors.red.withOpacity(0.5)),
+                      child: AlertDialog(
+                        title: const Text(
+                            'NO PUEDES COMER ESTE PRODUCTO',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 30)),
+                        content: Image.asset(
+                          "assets/images/noticias/fallido.png",
+                          height: 90,),
+
+                        actions: <Widget>[
+
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom( backgroundColor: Colors.deepOrange.shade700),
+                            onPressed: () => Navigator.pop(context, 'Cancel'),
+                            child: const Text('Más info', style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            )),
+                          ),
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom( backgroundColor: Colors.green.shade900),
+                            onPressed: () => Navigator.pop(context, 'OK'),
+                            child: const Text('Cerrar', style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    )),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              });
+
+            }
+            else{
+              flag=1;
+              Timer(Duration(seconds: 3), () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(dialogBackgroundColor: Colors.green.withOpacity(0.5)),
+                      child: AlertDialog(
+                        title: const Text(
+                            'SI PUEDES COMER ESTE PRODUCTO',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 31)),
+                        content: Image.asset(
+                          "assets/images/noticias/exito.png",
+                          height: 90),
+
+                        actions: <Widget>[
+
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom( backgroundColor: Colors.deepOrange.shade700),
+                            onPressed: () => Navigator.pop(context, 'Cancel'),
+                            child: const Text('Más info',
+                                style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            )),
+                          ),
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom( backgroundColor: Colors.green.shade900),
+                            onPressed: () => Navigator.pop(context, 'OK'),
+                            child: const Text('Cerrar'
+                                , style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                )),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              });
+
+            }
+
+          },
+          child: const Icon(Icons.camera_alt),
+        ),
+
     );
   }
 }
